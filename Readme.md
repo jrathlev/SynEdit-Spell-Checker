@@ -1,7 +1,7 @@
 ### SynEdit Spell Check
 
 The Delphi unit **SynEditSpell.pas** provides an interface to the well-known spell
-checking systen **Hunspell** and can be used together with
+checking system **Hunspell** and can be used together with
 [**SynEdit**](https://github.com/SynEdit/SynEdit).
 
 [Hunspell](https://github.com/hunspell/hunspell)
