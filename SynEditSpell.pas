@@ -401,16 +401,18 @@ begin
     while cx < Length(FEditor.Lines[FirstLine-1]) do begin
       CurrentXY:=BufferCoord(cx, FirstLine);
       CurrentWord:=FEditor.GetWordAtRowCol(CurrentXY);
-      tp:=FEditor.RowColumnToPixels(FEditor.BufferToDisplayPos(CurrentXY));
-      if tp.X>ACanvas.ClipRect.Right-ACanvas.ClipRect.Left then Break;
-      if Assigned(FEditor.Highlighter) then begin
-        if not FEditor.GetHighlighterAttriAtRowCol(CurrentXY, sToken, Attri) then
-          Attri:=FEditor.Highlighter.WhitespaceAttribute;
-        if Assigned(Attri) and (FSynEditSpellCheck.FCheckAttribs.IndexOf(Attri.Name)<>-1) and
-          (CurrentWord<>'') and not FSynEditSpellCheck.CheckWord(CurrentWord) then PaintUnderLine;
-        end
-      else if not FSynEditSpellCheck.CheckWord(CurrentWord) then PaintUnderLine;
-      Inc(cx, Length(CurrentWord));
+      if length(CurrentWord)>0 then begin
+        tp:=FEditor.RowColumnToPixels(FEditor.BufferToDisplayPos(CurrentXY));
+        if tp.X>ACanvas.ClipRect.Right-ACanvas.ClipRect.Left then Break;
+        if Assigned(FEditor.Highlighter) then begin
+          if not FEditor.GetHighlighterAttriAtRowCol(CurrentXY, sToken, Attri) then
+            Attri:=FEditor.Highlighter.WhitespaceAttribute;
+          if Assigned(Attri) and (FSynEditSpellCheck.FCheckAttribs.IndexOf(Attri.Name)>=0) and
+            not FSynEditSpellCheck.CheckWord(CurrentWord) then PaintUnderLine;
+          end
+        else if not FSynEditSpellCheck.CheckWord(CurrentWord) then PaintUnderLine;
+        Inc(cx, Length(CurrentWord));
+        end;
       Inc(cx);
       end;
     Inc(FirstLine);
