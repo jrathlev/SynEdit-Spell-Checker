@@ -19,7 +19,7 @@
    http://nhunspell.sourceforge.net
 
    Vers. 1.0 - August 2019
-   last modified: September 2019
+   last modified: October 2019
    *)
 
 unit SynEditSpell;
@@ -78,6 +78,7 @@ type
   TSynSpellCheckOptions = set of TSynSpellCheckOption;
 
   { Procedure types }
+  TOnLoadDict = procedure(Sender: TObject; AId : word) of object;
   TOnAddWord = procedure(Sender: TObject; AWord: String) of object;
   TOnCheckWord = procedure(Sender: TObject; AWord: String;
     ASuggestions: TStringList; var ACorrectWord: String; var AAction: Integer;
@@ -95,7 +96,8 @@ type
     FUnderlineStyle: TUnderlineStyle;
     FOnAddWord: TOnAddWord;
     FUserDict : TStringList;
-    FOnAbort, FOnDictClose, FOnDictLoad, FOnDone, FOnStart: TNotifyEvent;
+    FOnAbort, FOnDictSelect, FOnDictClose, FOnDone, FOnStart: TNotifyEvent;
+    FOnDictLoad : TOnLoadDict;
     FOnCheckWord: TOnCheckWord;
     FCheckAttribs : TStringList;
     FOptions: TSynSpellCheckOptions;
@@ -145,8 +147,9 @@ type
     property OnAbort: TNotifyEvent read FOnAbort write FOnAbort;
     property OnAddWord: TOnAddWord read FOnAddWord write FOnAddWord;
     property OnCheckWord: TOnCheckWord read FOnCheckWord write FOnCheckWord;
+    property OnDictLoad: TOnLoadDict read FOnDictLoad write FOnDictLoad;
+    property OnDictSelec: TNotifyEvent read FOnDictSelect write FOnDictSelect;
     property OnDictClose: TNotifyEvent read FOnDictClose write FOnDictClose;
-    property OnDictLoad: TNotifyEvent read FOnDictLoad write FOnDictLoad;
     property OnDone: TNotifyEvent read FOnDone write FOnDone;
     property OnStart: TNotifyEvent read FOnStart write FOnStart;
   end;
@@ -527,6 +530,7 @@ begin
     FindClose(SearchRec);
     if dcnt>0 then begin  // load dictionaries
       for n:=0 to High(FLoadedDicts) do with FLoadedDicts[n] do begin
+        if Assigned(FOnDictLoad) then FOnDictLoad(Self,Id);
         sn:=FDictPath+Filename;
         mAff:=TMemoryStream.Create;
         mAff.LoadFromFile(sn+extAff);
@@ -602,7 +606,7 @@ begin
           end;
         end;
       if sscoHourGlass in FOptions then Screen.Cursor:=FCursor;
-      if Assigned(FOnDictLoad) then FOnDictLoad(Self);
+      if Assigned(FOnDictSelect) then FOnDictSelect(Self);
       end
     else begin
       Result:=false;
