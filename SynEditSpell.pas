@@ -2,7 +2,7 @@
    Spell checker for SynEdit
    =========================
 
-   © Dr. J. Rathlev, D-24222 Schwentinental (kontakt(a)rathlev-home.de)
+   Â© Dr. J. Rathlev, D-24222 Schwentinental (kontakt(a)rathlev-home.de)
 
    The contents of this file may be used under the terms of the
    Mozilla Public License ("MPL") or
@@ -19,7 +19,7 @@
    http://nhunspell.sourceforge.net
 
    Vers. 1.0 - August 2019
-   Vers. 1-1 - September 2021: Fixed: underining of bad words if WordWrap is enabled
+   Vers. 1-1 - September 2021: Fixed: underlining of bad words if WordWrap is enabled
    last modified: September 2021
    *)
 
@@ -399,7 +399,7 @@ begin
     not FSynEditSpellCheck.Enabled or not(sscoAutoSpellCheck in FSynEditSpellCheck.Options) then Exit;
   lh:=FEditor.LineHeight;
   ACanvas.Font.Assign(FEditor.Font);
-// if WordWrap is active FirstLine and Lastline are the index of the dospülayed rows
+// if WordWrap is active FirstLine and Lastline are the index of the dospÃ¼layed rows
   for i:=FEditor.RowToLine(FirstLine) to FEditor.RowToLine(LastLine) do begin
     // Paint "Bad Words"
     cx:=1;
