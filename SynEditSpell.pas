@@ -19,7 +19,8 @@
    http://nhunspell.sourceforge.net
 
    Vers. 1.0 - August 2019
-   last modified: October 2019
+   Vers. 1-1 - September 2021: Fixed: underining of bad words if WordWrap is enabled
+   last modified: September 2021
    *)
 
 unit SynEditSpell;
@@ -338,7 +339,7 @@ begin
 procedure TDrawAutoSpellCheckPlugin.AfterPaint(ACanvas : TCanvas; const AClip : TRect;
   FirstLine, LastLine : Integer);
 var
-  lh,cx       : Integer;
+  lh,cx,i     : Integer;
   CurrentWord : String;
   CurrentXY   : TBufferCoord;
   tp          : TPoint;
@@ -398,11 +399,12 @@ begin
     not FSynEditSpellCheck.Enabled or not(sscoAutoSpellCheck in FSynEditSpellCheck.Options) then Exit;
   lh:=FEditor.LineHeight;
   ACanvas.Font.Assign(FEditor.Font);
-  while FirstLine<=LastLine do begin
+// if WordWrap is active FirstLine and Lastline are the index of the dospülayed rows
+  for i:=FEditor.RowToLine(FirstLine) to FEditor.RowToLine(LastLine) do begin
     // Paint "Bad Words"
     cx:=1;
-    while cx < Length(FEditor.Lines[FirstLine-1]) do begin
-      CurrentXY:=BufferCoord(cx, FirstLine);
+    while cx < Length(FEditor.Lines[i-1]) do begin
+      CurrentXY:=BufferCoord(cx,i);
       CurrentWord:=FEditor.GetWordAtRowCol(CurrentXY);
       if length(CurrentWord)>0 then begin
         tp:=FEditor.RowColumnToPixels(FEditor.BufferToDisplayPos(CurrentXY));
@@ -418,7 +420,6 @@ begin
         end;
       Inc(cx);
       end;
-    Inc(FirstLine);
     end;
   end;
 
