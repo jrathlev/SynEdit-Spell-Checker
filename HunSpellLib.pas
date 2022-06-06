@@ -15,7 +15,7 @@
    http://nhunspell.sourceforge.net
 
    Vers. 1.0 - August 2019
-   last modified:
+   last modified: June 2022
    *)
 
 unit HunspellLib;
@@ -25,7 +25,11 @@ interface
 uses System.Sysutils, Winapi.Windows;
 
 const
+{$IFDEF WIN32}
   HunspellDLLName = 'HunspellX86.dll';
+{$ELSE}
+  HunspellDLLName = 'HunspellX64.dll';
+{$ENDIF}
 
 type
   HyphenResult = record
