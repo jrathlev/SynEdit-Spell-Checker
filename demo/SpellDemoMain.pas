@@ -13,6 +13,7 @@
    the specific language governing rights and limitations under the License.
 
    Vers. 1.0 - September 2019
+   Vers. 1.1 - June 2022 - applicable for 32 and 64 bit compiling
    *)
 
 unit SpellDemoMain;
@@ -22,7 +23,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, SynEdit, SynEditSpell, Vcl.Menus,
-  Vcl.StdCtrls, SynEditHighlighter, SynHighlighterHtml, Vcl.ComCtrls;
+  Vcl.StdCtrls, SynEditHighlighter, SynHighlighterHtml, Vcl.ComCtrls,
+  Vcl.Buttons, Vcl.ExtCtrls;
 
 type
   TfrmMain = class(TForm)
@@ -39,6 +41,9 @@ type
     tsText: TTabSheet;
     tsHtml: TTabSheet;
     StatusBar: TStatusBar;
+    paTop: TPanel;
+    bbFont: TBitBtn;
+    FontDialog: TFontDialog;
     procedure FormCreate(Sender: TObject);
     procedure pmTextPopup(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -47,6 +52,7 @@ type
     procedure pmiMisspellingClick(Sender: TObject);
     procedure pcEditorChange(Sender: TObject);
     procedure pmiNoSpellcheckClick(Sender: TObject);
+    procedure bbFontClick(Sender: TObject);
   private
     { Private-Deklarationen }
     ActiveEditor : TSynEdit;
@@ -154,6 +160,14 @@ procedure TfrmMain.pcEditorChange(Sender: TObject);
 
 begin
   InitDictionary(GetEditor);
+  end;
+
+procedure TfrmMain.bbFontClick(Sender: TObject);
+begin
+  if assigned(ActiveEditor) then with FontDialog do begin
+    Font:=ActiveEditor.Font;
+    if Execute then ActiveEditor.Font:=Font;
+    end;
   end;
 
 procedure TfrmMain.pmiAddToDictionaryClick(Sender: TObject);
