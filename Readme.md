@@ -9,12 +9,11 @@ is a free spell checker and morphological analyzer library, licensed under
 LGPL/GPL/MPL tri-license. Amongst others, it is used in LibreOffice
 and browsers like Firefox and Google Chrome.
 
+**Note:** The sources are designed to be used in 32 bit applications only.
+
 **Files:**
   - Unit **SynEditSpell.pas** - routines for spell checking
   - Unit **HunSpellLib.pas** - interface to hunspell.dll
   - Program **SpellCheckDemo.dpr** - demo program
   - Library [**Hunspellx86.dll**](http://download.crawler-lib.net/NHunspell/) 
   - Dictionaries (German and US-English)
-
-
-
