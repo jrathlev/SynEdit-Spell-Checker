@@ -15,5 +15,5 @@ The provided source code can be used in 32 bit and 64 bit applications.
   - Unit **SynEditSpell.pas** - routines for spell checking
   - Unit **HunSpellLib.pas** - interface to hunspell.dll
   - Program **SpellCheckDemo.dpr** - demo program
-  - Libraries [**Hunspellx86.dll** and **Hunspellx64.dll** - Vers. 1.2](http://download.crawler-lib.net/NHunspell/) 
+  - Libraries [**Hunspellx86.dll** and **Hunspellx64.dll** - Vers. 1.2](https://www.heise.de/download/product/nhunspell-70018/) 
   - Dictionaries (German and US-English)
