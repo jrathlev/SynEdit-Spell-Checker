@@ -21,7 +21,7 @@
    Vers. 1.0 - August 2019
    Vers. 1.1 - September 2021: Fixed underlining of bad words if WordWrap is enabled
    Vers. 1.2 - June 2022: Fixed issue on compiling as 64 bit application
-   last modified: June 2022
+   last modified: August 2023
    *)
 
 unit SynEditSpell;
@@ -91,19 +91,18 @@ type
     FHunspellHandle: Pointer;
     FEnabled : boolean;
     FLangId : word;
-    FBusy, FModified, FUseUserDictionary: Boolean;
-    FMaxWordLength: Integer;
-    FDictPath, FUserFileName, FUserDictPath: String;
-    FUnderlineColor: TColor;
-    FUnderlineStyle: TUnderlineStyle;
-    FOnAddWord: TOnAddWord;
+    FBusy, FModified, FUseUserDictionary : Boolean;
+    FDictPath, FUserFileName, FUserDictPath : String;
+    FUnderlineColor : TColor;
+    FUnderlineStyle : TUnderlineStyle;
     FUserDict : TStringList;
-    FOnAbort, FOnDictSelect, FOnDictClose, FOnDone, FOnStart: TNotifyEvent;
+    FLoadedDicts : TLoadedDicts;
+    FOnAddWord : TOnAddWord;
+    FOnAbort, FOnDictSelect, FOnDictClose, FOnDone, FOnStart : TNotifyEvent;
     FOnDictLoad : TOnLoadDict;
     FOnCheckWord: TOnCheckWord;
     FCheckAttribs : TStringList;
-    FOptions: TSynSpellCheckOptions;
-    FLoadedDicts : TLoadedDicts;
+    FOptions : TSynSpellCheckOptions;
     { Functions }
     function GetDefaultDictionaryDir : string;
     function GetUserDictionaryDir : string;
@@ -156,6 +155,7 @@ type
     property OnStart: TNotifyEvent read FOnStart write FOnStart;
   end;
 
+function LangIDToLangShortname(ALangID : Word) : string;
 function GetLanguageName(LangID: word): String;
 
 procedure Register;
@@ -319,15 +319,12 @@ begin
   if length(Result)=0 then Result:='<?>';
   end;
 
-{ TDrawAutoSpellCheckPlugin }
-
 procedure Register;
 begin
   RegisterComponents('SynEdit',[TSynEditSpellCheck]);
   end;
 
-const
-  cpUtf8 = 65001;  // UTF-8 code page
+{ TDrawAutoSpellCheckPlugin }
 
 constructor TDrawAutoSpellCheckPlugin.Create (AOwner : TCustomSynEdit;
                                               ASynEditSpellCheck : TSynEditSpellCheck);
@@ -426,6 +423,9 @@ begin
 
 { TSynEditSpellCheck }
 
+const
+  cpUtf8 = 65001;  // UTF-8 code page
+
 constructor TSynEditSpellCheck.Create (AOwner : TComponent; ACheckAttri : TCheckAttributes);
 begin
   inherited Create(AOwner);
@@ -435,7 +435,6 @@ begin
   FUnderlineStyle:=usMicrosoftWord;
   FBusy:=False;
   FModified:=False;
-  FMaxWordLength:=0;
   FUseUserDictionary:=True;
 // User dictionary
   FUserDict:=TStringList.Create;
@@ -530,7 +529,8 @@ begin
       FindResult:=FindNext(SearchRec);
       end;
     FindClose(SearchRec);
-    if dcnt>0 then begin  // load dictionaries
+    Result:=dcnt>0;
+    if Result then begin  // load dictionaries
       for n:=0 to High(FLoadedDicts) do with FLoadedDicts[n] do begin
         if Assigned(FOnDictLoad) then FOnDictLoad(Self,Id);
         sn:=FDictPath+Filename;
@@ -571,7 +571,7 @@ var
 begin
   Result:=true;
   if LangId=0 then FEnabled:=false
-  else if FLangId<>LangId then begin // change dictionry
+  else if FLangId<>LangId then begin // change dictionary
     n:=GetDictIndex(LangId);
     if n>=0 then begin
       if sscoHourGlass in FOptions then begin
@@ -669,11 +669,11 @@ var
 begin
   Result:=0;
   if not (sscoSuggestWords in FOptions) then Exit;
-  if Enabled and Assigned(FHunspellHandle) and Assigned(SuggestionList)  then begin
+  if FEnabled and Assigned(FHunspellHandle) and Assigned(SuggestionList)  then begin
     wrds:=HunspellSuggest(FHunspellHandle,PChar(AWord));
     while wrds^<>nil do begin
       SuggestionList.Add(wrds^);
-      inc(wrds);    // fixes the original stement "Inc(Integer(wrds), sizeOf(Pointer));"
+      inc(wrds);    // fixes the original statement "Inc(Integer(wrds), sizeOf(Pointer));"
       end;
     Result:=SuggestionList.Count;
     end;
