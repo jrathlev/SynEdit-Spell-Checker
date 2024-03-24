@@ -101,10 +101,6 @@ object frmMain: TfrmMain
     end
     object tsText: TTabSheet
       Caption = 'Plain text:'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object SynEditText: TSynEdit
         Left = 0
         Top = 0

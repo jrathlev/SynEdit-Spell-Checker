@@ -21,8 +21,8 @@ unit SpellDemoMain;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, SynEdit, SynEditSpell, Vcl.Menus,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, SynEdit, SynEditSpell, Vcl.Menus,
   Vcl.StdCtrls, SynEditHighlighter, SynHighlighterHtml, Vcl.ComCtrls,
   Vcl.Buttons, Vcl.ExtCtrls;
 
@@ -103,7 +103,9 @@ begin
   TDrawAutoSpellCheckPlugin.Create(SynEditHtml,SynEditSpellCheck);
   SynEditHtml.Tag:=1031;   // German
 //  SynEditHtml.Highlighter.AdditionalIdentChars:=['ä','ö','ü','Ä','Ö','Ü','ß'];
-  SynEditHtml.Highlighter.AdditionalIdentChars:=[#$C0..#$D6,#$D8..#$F6,#$F8..#$FF];
+  SynEditHtml.Highlighter.AdditionalIdentChars:=SynEditHtml.MakeCharArray('#$C0..#$D6,#$D8..#$F6,#$F8..#$FF');
+  SynEditHtml.Highlighter.AdditionalWordBreakChars:=[#$30F,#$30B];
+  SynEditText.AdditionalWordBreakChars:=[#$30F,#$30B];
   TDrawAutoSpellCheckPlugin.Create(SynEditText,SynEditSpellCheck);
   SynEditText.Tag:=0;      // no language assigned
   ActiveEditor:=nil;
