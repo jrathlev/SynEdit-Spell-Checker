@@ -21,7 +21,9 @@
    Vers. 1.0 - August 2019
    Vers. 1.1 - September 2021: Fixed underlining of bad words if WordWrap is enabled
    Vers. 1.2 - June 2022: Fixed issue on compiling as 64 bit application
-   last modified: August 2023
+   Vers. 1.3 - March 2024: Added "RemoveDictWord"  to remove an entry from the
+               dictionary (suggested by Dimon-II - https://github.com/Dimon-II/DeCard64)
+   last modified: March 2024
    *)
 
 unit SynEditSpell;
@@ -40,11 +42,18 @@ type
 
   TLoadedDict = record
     Id : word;
-    Shortname,Filename : string;
+    Filename,Shortname : string;
     mAff,mDic : TMemoryStream;
     end;
 
+  TIdArray = array of word;
   TLoadedDicts = array of TLoadedDict;
+
+  TDictionaryProps = class(TObject)
+    Id : word;
+    Shortname : string;
+    constructor Create (AId : word; const sn : string);
+    end;
 
   TUnderlineStyle = (usCorelWordPerfect, usMicrosoftWord);
   TCheckAttribute = (caText,caComment,caString,caDocumentation);
@@ -96,6 +105,7 @@ type
     FUnderlineColor : TColor;
     FUnderlineStyle : TUnderlineStyle;
     FUserDict : TStringList;
+    FDictionaries : TStringList;
     FLoadedDicts : TLoadedDicts;
     FOnAddWord : TOnAddWord;
     FOnAbort, FOnDictSelect, FOnDictClose, FOnDone, FOnStart : TNotifyEvent;
@@ -116,8 +126,10 @@ type
     destructor Destroy; override;
 
     function GetLanguageIndex (const AShortName : string) : integer;
+    function GetLanguageNameFromId (LangId : word) : string;
     function GetDictIndex (LangId : word) : integer;
-    function LoadDictionaries (const APath : string) : boolean;
+    function GetDictionaryFiles : boolean;
+    function LoadDictionaries (const APath : string; Dicts : TIdArray = nil) : boolean;
     function SelectDictionary (const LangShortname : String) : boolean; overload;
     function SelectDictionary (LangId : word) : boolean; overload;
     procedure CloseDictionary;
@@ -128,6 +140,7 @@ type
     function CheckWord (const AWord : String): Boolean;
     function GetSuggestions (const AWord : String; SuggestionList: TStringList): Integer;
     procedure AddDictWord (const AWord : String);
+    procedure RemoveDictWord(const AWord: String);
     function SpellCheck (AEditor : TSynEdit) : boolean;
     property UserDict : TStringList read FUserDict write FUserDict;
   published
@@ -136,6 +149,7 @@ type
     property Enabled : boolean read FEnabled;
     property LanguageName : String read GetDictLanguageName;
     property DictionaryPath: String read FDictPath;
+    property AllDictionaries : TStringList read FDictionaries;
     property Modified: Boolean read FModified write FModified default False;
     property Options: TSynSpellCheckOptions read FOptions write FOptions;
     property UnderlineColor: TColor read FUnderlineColor write SetUnderlineColor default clRed;
@@ -324,8 +338,15 @@ begin
   RegisterComponents('SynEdit',[TSynEditSpellCheck]);
   end;
 
-{ TDrawAutoSpellCheckPlugin }
+{ ------------------------------------------------------------------- }
+constructor TDictionaryProps.Create (AId : word; const sn : string);
+begin
+  inherited Create;
+  Id:=AId; Shortname:=sn;
+  end;
 
+{ ------------------------------------------------------------------- }
+{ TDrawAutoSpellCheckPlugin }
 constructor TDrawAutoSpellCheckPlugin.Create (AOwner : TCustomSynEdit;
                                               ASynEditSpellCheck : TSynEditSpellCheck);
 begin
@@ -433,8 +454,10 @@ begin
   FEnabled:=false; FLangId:=0;
   FUnderlineColor:=clRed;
   FUnderlineStyle:=usMicrosoftWord;
+  FDictPath:='';
   FBusy:=False;
   FModified:=False;
+  FDictionaries:=TStringList.Create;
   FUseUserDictionary:=True;
 // User dictionary
   FUserDict:=TStringList.Create;
@@ -463,8 +486,14 @@ begin
   if FLoadedDicts<>nil then for i:=0 to High(FLoadedDicts) do with FLoadedDicts[i] do begin
     mAff.Free; mDic.Free;
     end;
-  FUserDict.Free;
-  FCheckAttribs.Free;
+  with FDictionaries do begin
+    for i:=0 to Count-1 do if assigned(Objects[i]) then begin
+      try Objects[i].Free; except end;
+      Objects[i]:=nil;
+      end;
+    Free;
+    end;
+  FUserDict.Free; FCheckAttribs.Free;
   inherited;
   end;
 
@@ -476,6 +505,11 @@ begin
 procedure TSynEditSpellCheck.SetUnderlineStyle (Value : TUnderlineStyle);
 begin
   FUnderlineStyle:=Value;
+  end;
+
+function TSynEditSpellCheck.GetLanguageNameFromId (LangId : word) : string;
+begin
+
   end;
 
 // Get index from language list matching to AShortName
@@ -501,37 +535,63 @@ begin
   Result:=-1;
   end;
 
-// Load all dictionaries found in APath
-function TSynEditSpellCheck.LoadDictionaries (const APath : string) : boolean;
+// Get a list of all available dictionary files in FDictPath
+function TSynEditSpellCheck.GetDictionaryFiles : boolean;
 var
   SearchRec: TSearchRec;
-  FindResult,
-  n,dcnt : integer;
+  FindResult,n : integer;
   sn     : string;
+begin
+  Result:=false;
+  if length(FDictPath)>0 then begin
+    FindResult:=FindFirst(FDictPath+'*'+extAff,faAnyFile,SearchRec);
+    while (FindResult=0) do begin
+      sn:=ChangeFileExt(SearchRec.Name,'');
+      n:=GetLanguageIndex(sn);
+      if (n>=0) then begin
+        with Languages[n] do
+          FDictionaries.AddObject(sn,TDictionaryProps.Create(Id,Shortname));
+        end;
+      FindResult:=FindNext(SearchRec);
+      end;
+    FindClose(SearchRec);
+    end;
+  Result:=FDictionaries.Count>0;
+  end;
+
+// Load all dictionaries found in APath
+function TSynEditSpellCheck.LoadDictionaries (const APath : string; Dicts : TIdArray) : boolean;
+var
+  i,j,dcnt : integer;
+  sn : string;
+  aid    : word;
+  ok     : boolean;
 begin
   Result:=false;
   if DirectoryExists(APath) then begin
     FDictPath:=IncludeTrailingBackslash(APath);
     dcnt:=0; FLoadedDicts:=nil;
-    FindResult:=FindFirst(FDictPath+'*'+extAff,faAnyFile,SearchRec);
-    while (FindResult=0) do begin
-      sn:=ChangeFileExt(SearchRec.Name,'');
-      n:=GetLanguageIndex(sn);
-      if n>=0 then begin
-        SetLength(FLoadedDicts,dcnt+1);
-        with FLoadedDicts[dcnt] do begin
-          Id:=Languages[n].Id;
-          Shortname:=Languages[n].Shortname;
-          Filename:=sn;
+    if GetDictionaryFiles then begin
+      with FDictionaries do for i:=0 to Count-1 do begin
+        aid:=(Objects[i] as TDictionaryProps).Id;
+        ok:=length(Dicts)=0;
+        if not ok then for j:=0 to High(Dicts) do if (aid=Dicts[j]) then begin
+          ok:=true; Break;
           end;
-        inc(dcnt);
+        if ok then begin
+          SetLength(FLoadedDicts,dcnt+1);
+          with FLoadedDicts[dcnt] do begin
+            Id:=aid;
+            Shortname:=(Objects[i] as TDictionaryProps).Shortname;
+            Filename:=Strings[i];
+            end;
+          inc(dcnt);
+          end;
         end;
-      FindResult:=FindNext(SearchRec);
       end;
-    FindClose(SearchRec);
     Result:=dcnt>0;
     if Result then begin  // load dictionaries
-      for n:=0 to High(FLoadedDicts) do with FLoadedDicts[n] do begin
+      for i:=0 to High(FLoadedDicts) do with FLoadedDicts[i] do begin
         if Assigned(FOnDictLoad) then FOnDictLoad(Self,Id);
         sn:=FDictPath+Filename;
         mAff:=TMemoryStream.Create;
@@ -690,6 +750,19 @@ begin
     HunspellAdd(FHunspellHandle,PChar(sw));
     FModified:=true;
     if Assigned(FOnAddWord) then FOnAddWord(Self,AWord);
+    end;
+  end;
+
+// remove a word from dictionary
+procedure TSynEditSpellCheck.RemoveDictWord (const AWord : String);
+var
+  sw : String;
+begin
+  sw:=Trim(AWord);
+  if FEnabled and Assigned(FHunspellHandle) and (length(sw)>0) then with FUserDict do if IndexOf(sw)>=0 then begin
+    Delete(IndexOf(sw));
+    HunspellRemove(FHunspellHandle,PChar(sw));
+    FModified:=true;
     end;
   end;
 
